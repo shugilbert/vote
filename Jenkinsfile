@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the code from the repository
-                git 'https://github.com/shugilbert/vote.git'
+                git 'feature/branch','https://github.com/shugilbert/vote.git'
             }
         }
         
