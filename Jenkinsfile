@@ -9,9 +9,10 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            steps {
-                // Checkout the code from the repository
-                git 'feature/branch','https://github.com/shugilbert/vote.git'
+             steps {
+                git branch: 'feature/branch', 
+                    url: 'https://github.com/shugilbert/vote.git', 
+                    credentialsId: 'github-credentials'
             }
         }
         
