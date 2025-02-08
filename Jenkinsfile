@@ -39,8 +39,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                    docker tag ${IMAGE_TAG} ${762233752349.dkr.ecr.us-east-1.amazonaws.com/vote}:${IMAGE_TAG}
-                    docker push ${762233752349.dkr.ecr.us-east-1.amazonaws.com/vote}:${IMAGE_TAG}
+                    docker tag ${IMAGE_TAG} ${762233752349.ecr.us-east-1.amazonaws.com/vote}:${IMAGE_TAG}
+                    docker push ${762233752349.ecr.us-east-1.amazonaws.com/vote}:${IMAGE_TAG}
                     """
                 }
             }
