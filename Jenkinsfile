@@ -52,18 +52,17 @@ pipeline {
             }
         }
 
-        stage('Push to ECR') {
-            steps {
-                script {
-                    // Tag the Docker image and push to ECR
-                    sh """
-                    docker tag ${IMAGE_TAG} ${ECR_REPO_URI}:${IMAGE_TAG}
-                    docker push ${ECR_REPO_URI}:${IMAGE_TAG}
-                    """
-                }
-            }
+       stage('Push to ECR') {
+    steps {
+        script {
+            // Tag the Docker image and push to ECR
+            sh """
+            docker tag ${IMAGE_TAG} ${ECR_REPO_URI}:${IMAGE_TAG}
+            docker push ${ECR_REPO_URI}:${IMAGE_TAG}
+            """
         }
     }
+}
 
     post {
         success {
