@@ -27,8 +27,9 @@ pipeline {
         stage('Login to AWS ECR') {
             steps {
                 script {
+                    // Automatically assumes the role attached to the EC2 instance and logs in to ECR
                     sh """
-                    aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}
                     """
                 }
             }
