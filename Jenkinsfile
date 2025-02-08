@@ -7,14 +7,14 @@ pipeline {
         AWS_DEFAULT_REGION = 'us-east-1'
     }
 
-    stages {
-        stage('Checkout') {
-             steps {
-                git branch: 'feature/branch', 
-                    url: 'https://github.com/shugilbert/vote.git', 
-                    credentialsId: 'github-credentials'
-            }
-        }
+    // stages {
+    //     stage('Checkout') {
+    //          steps {
+    //             git branch: 'feature/branch', 
+    //                 url: 'https://github.com/shugilbert/vote.git', 
+    //                 credentialsId: 'github-credentials'
+    //         }
+    //     }
         
         stage('Build Docker Image') {
             steps {
