@@ -9,14 +9,14 @@ pipeline {
 
     stages {
         // Uncomment and use this stage if you need to perform a checkout from Git
-        // stage('Checkout') {
-        //     steps {
-        //         git branch: 'feature/branch', 
-        //             url: 'https://github.com/shugilbert/vote.git', 
-        //             credentialsId: 'github-credentials'
-        //     }
-        // }
-        
+        stage('Checkout') {
+            steps {
+                git branch: 'feature/branch', 
+                    url: 'https://github.com/shugilbert/vote.git', 
+                    credentialsId: 'github-credentials'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -26,15 +26,17 @@ pipeline {
             }
         }
 
+        // Uncomment and modify the 'Test Docker Image' stage if needed
+        /*
         stage('Test Docker Image') {
             steps {
                 script {
                     // Run tests inside the Docker container (if applicable)
-                    // You can add your test commands here
                     sh "docker run --rm ${IMAGE_TAG} python -m unittest discover tests/"
                 }
             }
         }
+        */
 
         stage('Login to AWS ECR') {
             steps {
