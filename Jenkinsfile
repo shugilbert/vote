@@ -1,7 +1,6 @@
 pipeline {
     agent any
     environment {
-        // Set your ECR repository URL
         ECR_REPO_URI = '762233752349.dkr.ecr.us-east-1.amazonaws.com/vote'
         IMAGE_TAG = "vote:${env.BUILD_ID}"
         AWS_DEFAULT_REGION = 'us-east-1'
@@ -27,7 +26,6 @@ pipeline {
         stage('Login to AWS ECR') {
             steps {
                 script {
-                    // Automatically assumes the role attached to the EC2 instance and logs in to ECR
                     sh """
                         aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}
                     """
@@ -39,8 +37,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                    docker tag ${IMAGE_TAG} ${762233752349.ecr.us-east-1.amazonaws.com/vote}:${IMAGE_TAG}
-                    docker push ${762233752349.ecr.us-east-1.amazonaws.com/vote}:${IMAGE_TAG}
+                        docker tag ${IMAGE_TAG} ${ECR_REPO_URI}:${env.BUILD_ID}
+                        docker push ${ECR_REPO_URI}:${env.BUILD_ID}
                     """
                 }
             }
@@ -49,7 +47,7 @@ pipeline {
 
     post {
         success {
-            echo 'Docker image successfully built, tested, and pushed to ECR!'
+            echo 'Docker image successfully built and pushed to ECR!'
         }
         failure {
             echo 'Something went wrong. Check the logs for more details.'
