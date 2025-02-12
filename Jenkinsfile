@@ -3,7 +3,7 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         ECR_REPO_URI = '762233752349.dkr.ecr.us-east-1.amazonaws.com/vote'
-        IMAGE_TAG = "vote:${env.BUILD_ID}"
+        IMAGE_TAG = "vote:${env.BUILD_ID}"  // Tag with the Jenkins build ID
         ECS_CLUSTER = 'vote-cluster'
         ECS_SERVICE = 'vote-service'
         TASK_DEFINITION_FAMILY = 'vote-task'
@@ -23,6 +23,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    // Build the Docker image with the generated tag based on the Jenkins build ID
                     sh "docker build -t ${IMAGE_TAG} ."
                 }
             }
@@ -41,6 +42,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
+                    // Tag and push the image to ECR with the build ID as part of the tag
                     sh """
                         docker tag ${IMAGE_TAG} ${ECR_REPO_URI}:${env.BUILD_ID}
                         docker push ${ECR_REPO_URI}:${env.BUILD_ID}
