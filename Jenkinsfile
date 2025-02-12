@@ -3,7 +3,6 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         ECR_REPO_URI = '762233752349.dkr.ecr.us-east-1.amazonaws.com/vote'
-        IMAGE_TAG = "${ECR_REPO_URI}:${env.BUILD_ID}"  // Tag with the Jenkins build ID
         ECS_CLUSTER = 'vote-cluster'
         ECS_SERVICE = 'vote-service'
         TASK_DEFINITION_FAMILY = 'vote-task'
@@ -23,7 +22,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image with the generated tag based on the Jenkins build ID
+                    def buildTag = "${ECR_REPO_URI}:${env.BUILD_ID}"
+                    env.IMAGE_TAG = buildTag  // Assign dynamically to environment variable
                     sh "docker build -t ${IMAGE_TAG} ."
                 }
             }
@@ -32,9 +32,7 @@ pipeline {
         stage('Login to AWS ECR') {
             steps {
                 script {
-                    sh """
-                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}
-                    """
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
                 }
             }
         }
@@ -42,10 +40,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Tag and push the image to ECR with the build ID as part of the tag
-                    sh """
-                        docker push ${IMAGE_TAG}
-                    """
+                    sh "docker push ${IMAGE_TAG}"
                 }
             }
         }
@@ -57,7 +52,7 @@ pipeline {
                         aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query taskDefinition > ${TASK_DEFINITION_FILE}
                         jq '.taskDefinition | {containerDefinitions, family, executionRoleArn, networkMode, requiresCompatibilities, cpu, memory}' ${TASK_DEFINITION_FILE} > new-task-def.json
                         jq --arg IMAGE "${IMAGE_TAG}" '.containerDefinitions[0].image = $IMAGE' new-task-def.json > updated-task-def.json
-                        aws ecs register-task-definition --cli-input-json file://updated-task-def.json
+                        aws ecs register-task-definition --cli-input-json file://updated-task-def.json > task-def-response.json
                     """
                 }
             }
@@ -66,11 +61,8 @@ pipeline {
         stage('Update ECS Service') {
             steps {
                 script {
-                    // Register the ECS service using the updated task definition ARN
-                    def taskDefArn = sh(script: "aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query 'taskDefinition.taskDefinitionArn' --output text", returnStdout: true).trim()
-                    sh """
-                        aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${taskDefArn}
-                    """
+                    def taskDefArn = sh(script: "jq -r '.taskDefinition.taskDefinitionArn' task-def-response.json", returnStdout: true).trim()
+                    sh "aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${taskDefArn}"
                 }
             }
         }
@@ -78,10 +70,10 @@ pipeline {
 
     post {
         success {
-            echo 'CI and CD pipeline completed successfully!'
+            echo 'CI/CD pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check logs for more details.'
+            echo 'Pipeline failed. Check logs for details.'
         }
     }
 }
