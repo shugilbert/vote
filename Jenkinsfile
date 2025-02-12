@@ -49,14 +49,6 @@ pipeline {
             }
         }
 
-        stage('Pull Latest Image') {
-            steps {
-                script {
-                    sh "aws ecr describe-images --repository-name vote --region ${AWS_REGION}"
-                }
-            }
-        }
-
         stage('Update ECS Task Definition') {
             steps {
                 script {
@@ -73,8 +65,10 @@ pipeline {
         stage('Update ECS Service') {
             steps {
                 script {
+                    // Register the ECS service using the updated task definition ARN
+                    def taskDefArn = sh(script: "aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query 'taskDefinition.taskDefinitionArn' --output text", returnStdout: true).trim()
                     sh """
-                        aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${TASK_DEFINITION_FAMILY}
+                        aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${taskDefArn}
                     """
                 }
             }
