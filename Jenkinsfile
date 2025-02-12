@@ -8,7 +8,7 @@ pipeline {
         TASK_DEFINITION_FAMILY = 'vote-task'
         TASK_DEFINITION_FILE = 'task-definition.json'
         AWS_DEFAULT_REGION = 'us-east-1'
-        CURRENT_IMAGE = '' // ✅ Explicitly defining CURRENT_IMAGE
+        CURRENT_IMAGE = 'latest' // ✅ Explicitly defining CURRENT_IMAGE
     }
 
     stages {
@@ -36,7 +36,7 @@ pipeline {
         stage('Build and Tag New Docker Image') {
             steps {
                 script {
-                    def IMAGE_TAG = "${ECR_REPO_URI}:${BUILD_ID}" // ✅ Use Jenkins build ID to create a dynamic image tag
+                    def IMAGE_TAG = "${762233752349.dkr.ecr.us-east-1.amazonaws.com/result}:${BUILD_ID}" // ✅ Use Jenkins build ID to create a dynamic image tag
                     echo "Generated IMAGE_TAG: ${IMAGE_TAG}"
                     sh "docker build -t ${IMAGE_TAG} ."
                 }
