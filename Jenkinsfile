@@ -44,54 +44,37 @@ pipeline {
             }
         }
 
-        stage('Login to AWS ECR') {
-            steps {
-                script {
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
-                }
-            }
-        }
-
-        stage('Push to ECR') {
-            steps {
-                script {
-                    sh "docker push ${IMAGE_TAG}"
-                }
-            }
-        }
-
-        stage('Update ECS Task Definition') {
-            steps {
-                script {
-                    sh """
-                        # ✅ Fetch existing task definition
-                        aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query taskDefinition --output json > ${TASK_DEFINITION_FILE}
-
-                        # ✅ Extract required fields while keeping compatibility
-                        jq '. | {containerDefinitions, family, executionRoleArn, networkMode, requiresCompatibilities, cpu, memory}' ${TASK_DEFINITION_FILE} > new-task-def.json
-
-                        # ✅ Update image tag in the task definition
-                        jq --arg IMAGE "${IMAGE_TAG}" '.containerDefinitions[0].image = $IMAGE' new-task-def.json > updated-task-def.json
-
-                        # ✅ Register new task definition and capture response
-                        aws ecs register-task-definition --cli-input-json file://updated-task-def.json --output json > task-def-response.json
-                    """
-                }
-            }
-        }
-
-        stage('Update ECS Service') {
-            steps {
-                script {
-                    def taskDefArn = sh(
-                        script: "jq -r '.taskDefinition.taskDefinitionArn' task-def-response.json",
-                        returnStdout: true
-                    ).trim()
-                    sh "aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${taskDefArn}"
-                }
-            }
+       stage('Login to AWS ECR') {
+    steps {
+        script {
+            sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 762233752349.dkr.ecr.us-east-1.amazonaws.com'
         }
     }
+}
+
+stage('Push to ECR') {
+    steps {
+        script {
+            sh 'docker push 762233752349.dkr.ecr.us-east-1.amazonaws.com/vote:latest'
+        }
+    }
+}
+
+stage('Update ECS Task Definition') {
+    steps {
+        script {
+            sh 'aws ecs register-task-definition --family vote-task --container-definitions file://task-definition.json'
+        }
+    }
+}
+
+stage('Update ECS Service') {
+    steps {
+        script {
+            sh 'aws ecs update-service --cluster vote-cluster --service vote-service --task-definition vote-task'
+        }
+    }
+}
 
     post {
         success {
