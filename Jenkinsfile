@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     environment {
         AWS_REGION = 'us-east-1'
         ECR_REPO_URI = '762233752349.dkr.ecr.us-east-1.amazonaws.com/vote'
@@ -37,44 +38,45 @@ pipeline {
         stage('Build and Tag New Docker Image') {
             steps {
                 script {
-                    def IMAGE_TAG = "${762233752349.dkr.ecr.us-east-1.amazonaws.com/result}:${BUILD_ID}" // ✅ Use Jenkins build ID to create a dynamic image tag
+                    def IMAGE_TAG = "${ECR_REPO_URI}:${BUILD_ID}" // ✅ Use Jenkins build ID to create a dynamic image tag
                     echo "Generated IMAGE_TAG: ${IMAGE_TAG}"
                     sh "docker build -t ${IMAGE_TAG} ."
                 }
             }
         }
 
-       stage('Login to AWS ECR') {
-    steps {
-        script {
-            sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 762233752349.dkr.ecr.us-east-1.amazonaws.com'
+        stage('Login to AWS ECR') {
+            steps {
+                script {
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
+                }
+            }
         }
-    }
-}
 
-stage('Push to ECR') {
-    steps {
-        script {
-            sh 'docker push 762233752349.dkr.ecr.us-east-1.amazonaws.com/vote:latest'
+        stage('Push to ECR') {
+            steps {
+                script {
+                    sh "docker push ${ECR_REPO_URI}:${BUILD_ID}" // Pushing the dynamically tagged image
+                }
+            }
         }
-    }
-}
 
-stage('Update ECS Task Definition') {
-    steps {
-        script {
-            sh 'aws ecs register-task-definition --family vote-task --container-definitions file://task-definition.json'
+        stage('Update ECS Task Definition') {
+            steps {
+                script {
+                    sh "aws ecs register-task-definition --family ${TASK_DEFINITION_FAMILY} --container-definitions file://${TASK_DEFINITION_FILE}"
+                }
+            }
         }
-    }
-}
 
-stage('Update ECS Service') {
-    steps {
-        script {
-            sh 'aws ecs update-service --cluster vote-cluster --service vote-service --task-definition vote-task'
+        stage('Update ECS Service') {
+            steps {
+                script {
+                    sh "aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${TASK_DEFINITION_FAMILY}"
+                }
+            }
         }
     }
-}
 
     post {
         success {
