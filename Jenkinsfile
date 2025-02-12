@@ -8,8 +8,7 @@ pipeline {
         TASK_DEFINITION_FAMILY = 'vote-task'
         TASK_DEFINITION_FILE = 'task-definition.json'
         AWS_DEFAULT_REGION = 'us-east-1'
-        IMAGE_TAG = '' // Explicitly define IMAGE_TAG (will be populated dynamically)
-        CURRENT_IMAGE = '' // Explicitly define CURRENT_IMAGE (will be populated dynamically)
+        CURRENT_IMAGE = '' // ✅ Explicitly defining CURRENT_IMAGE
     }
 
     stages {
@@ -29,7 +28,7 @@ pipeline {
                         returnStdout: true
                     ).trim()
                     echo "Current Image in Task Definition: ${CURRENT_IMAGE}"
-                    env.CURRENT_IMAGE = CURRENT_IMAGE // Ensure global access to CURRENT_IMAGE
+                    env.CURRENT_IMAGE = CURRENT_IMAGE // ✅ Ensures global access
                 }
             }
         }
@@ -37,9 +36,8 @@ pipeline {
         stage('Build and Tag New Docker Image') {
             steps {
                 script {
-                    // Dynamically generate IMAGE_TAG based on Git commit hash or Jenkins build ID
-                    env.IMAGE_TAG = "${ECR_REPO_URI}:${BUILD_ID}" // Or use a commit hash if preferred
-                    echo "Building Docker image with tag: ${IMAGE_TAG}"
+                    def IMAGE_TAG = "${ECR_REPO_URI}:${BUILD_ID}" // ✅ Use Jenkins build ID to create a dynamic image tag
+                    echo "Generated IMAGE_TAG: ${IMAGE_TAG}"
                     sh "docker build -t ${IMAGE_TAG} ."
                 }
             }
@@ -65,16 +63,16 @@ pipeline {
             steps {
                 script {
                     sh """
-                        # Fetch the existing task definition
+                        # ✅ Fetch existing task definition
                         aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query taskDefinition --output json > ${TASK_DEFINITION_FILE}
 
-                        # Extract the relevant fields while maintaining compatibility
+                        # ✅ Extract required fields while keeping compatibility
                         jq '. | {containerDefinitions, family, executionRoleArn, networkMode, requiresCompatibilities, cpu, memory}' ${TASK_DEFINITION_FILE} > new-task-def.json
 
-                        # Update image tag in the task definition
+                        # ✅ Update image tag in the task definition
                         jq --arg IMAGE "${IMAGE_TAG}" '.containerDefinitions[0].image = $IMAGE' new-task-def.json > updated-task-def.json
 
-                        # Register the new task definition
+                        # ✅ Register new task definition and capture response
                         aws ecs register-task-definition --cli-input-json file://updated-task-def.json --output json > task-def-response.json
                     """
                 }
