@@ -22,8 +22,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def buildTag = "${ECR_REPO_URI}:${env.BUILD_ID}"
-                    env.IMAGE_TAG = buildTag  // Assign dynamically to environment variable
+                    env.IMAGE_TAG = "${ECR_REPO_URI}:${env.BUILD_ID}"  // Assign dynamically
                     sh "docker build -t ${IMAGE_TAG} ."
                 }
             }
@@ -32,7 +31,7 @@ pipeline {
         stage('Login to AWS ECR') {
             steps {
                 script {
-                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
                 }
             }
         }
@@ -48,12 +47,15 @@ pipeline {
         stage('Update ECS Task Definition') {
             steps {
                 script {
+                    // Retrieve and modify task definition
                     sh """
-                        aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query taskDefinition > ${TASK_DEFINITION_FILE}
-                        jq '.taskDefinition | {containerDefinitions, family, executionRoleArn, networkMode, requiresCompatibilities, cpu, memory}' ${TASK_DEFINITION_FILE} > new-task-def.json
+                        aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_FAMILY} --query taskDefinition --output json > ${TASK_DEFINITION_FILE}
+                        jq '. | {containerDefinitions, family, executionRoleArn, networkMode, requiresCompatibilities, cpu, memory}' ${TASK_DEFINITION_FILE} > new-task-def.json
                         jq --arg IMAGE "${IMAGE_TAG}" '.containerDefinitions[0].image = $IMAGE' new-task-def.json > updated-task-def.json
-                        aws ecs register-task-definition --cli-input-json file://updated-task-def.json > task-def-response.json
                     """
+
+                    // Register the new task definition and save response
+                    sh "aws ecs register-task-definition --cli-input-json file://updated-task-def.json --output json > task-def-response.json"
                 }
             }
         }
@@ -61,7 +63,10 @@ pipeline {
         stage('Update ECS Service') {
             steps {
                 script {
+                    // Extract task definition ARN from the response file
                     def taskDefArn = sh(script: "jq -r '.taskDefinition.taskDefinitionArn' task-def-response.json", returnStdout: true).trim()
+
+                    // Update ECS service with new task definition
                     sh "aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${taskDefArn}"
                 }
             }
@@ -70,10 +75,10 @@ pipeline {
 
     post {
         success {
-            echo 'CI/CD pipeline completed successfully!'
+            echo '✅ CI/CD pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo '❌ Pipeline failed. Check logs for details.'
         }
     }
 }
