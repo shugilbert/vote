@@ -7,7 +7,7 @@ pipeline {
         ECS_CLUSTER = 'vote-cluster'
         ECS_SERVICE = 'vote-service'
         TASK_DEFINITION_FAMILY = 'vote-task'
-        // TASK_DEFINITION_FILE = 'task-definition.json'
+        TASK_DEFINITION_FILE = 'task-definition.json'
         AWS_DEFAULT_REGION = 'us-east-1'
         CURRENT_IMAGE = 'latest' // ✅ Explicitly defining CURRENT_IMAGE
         dkr = '762233752349.dkr.ecr.us-east-1.amazonaws.com/vote'
