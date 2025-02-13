@@ -64,7 +64,7 @@ pipeline {
         stage('Update ECS Task Definition') {
             steps {
                 script {
-                    sh "aws ecs register-task-definition --family ${TASK_DEFINITION_FAMILY} --container-definitions file://${TASK_DEFINITION_FILE}"
+                    sh "aws ecs register-task-definition --family ${TASK_DEFINITION_FAMILY} --container-definitions file://task-definition.json"
                 }
             }
         }
